@@ -9,6 +9,11 @@ async def server(websocket):
         print(f"Новое подключение: {websocket.remote_address}")
         while True:
             ticker = str(await websocket.recv()).upper()
+            metadata = requests.get("https://iss.moex.com/iss/engines/stock/markets/shares/boards/TQBR/"
+                                    "securities.json?iss.meta=off&iss.only=marketdata&marketdata.columns=LAST").json()
+            value = []
+            for i in range(0, len(metadata['marketdata']['data'])):
+                value.append(metadata['marketdata']['data'][i][0])
             if ticker in shares:
                 ind = shares.index(ticker)
                 data = json.dumps(value[ind])
@@ -19,13 +24,10 @@ async def server(websocket):
 
 
 metadata = requests.get("https://iss.moex.com/iss/engines/stock/markets/shares/boards/TQBR/"
-                        "securities.json?iss.meta=off&iss.only=marketdata&marketdata.columns=SECID,LAST").json()
+                        "securities.json?iss.meta=off&iss.only=marketdata&marketdata.columns=SECID").json()
 shares = []
-value = []
 for i in range(0, len(metadata['marketdata']['data'])):
     shares.append(metadata['marketdata']['data'][i][0])
-    value.append(metadata['marketdata']['data'][i][1])
-metadata = 0
 
 start_server = websockets.serve(server, "localhost", 1111)
 
