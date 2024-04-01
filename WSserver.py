@@ -9,25 +9,16 @@ async def server(websocket):
         print(f"Новое подключение: {websocket.remote_address}")
         while True:
             ticker = str(await websocket.recv()).upper()
-            metadata = requests.get("https://iss.moex.com/iss/engines/stock/markets/shares/boards/TQBR/"
+            metadata = requests.get(F"https://iss.moex.com/iss/engines/stock/markets/shares/boards/TQBR/securities/{ticker}/"
                                     "securities.json?iss.meta=off&iss.only=marketdata&marketdata.columns=LAST").json()
-            value = []
-            for i in range(0, len(metadata['marketdata']['data'])):
-                value.append(metadata['marketdata']['data'][i][0])
-            if ticker in shares:
-                ind = shares.index(ticker)
-                data = json.dumps(value[ind])
+            if metadata['marketdata']['data'] == []:
+                await websocket.send("404")
+            else:
+                value = metadata['marketdata']['data'][0][0]
+                data = json.dumps(value)
                 await websocket.send(data)
-            else: await websocket.send("404")
     except (websockets.exceptions.ConnectionClosedOK, websockets.exceptions.ConnectionClosedError):
         print(f"Клиент {websocket.remote_address} отключился")
-
-
-metadata = requests.get("https://iss.moex.com/iss/engines/stock/markets/shares/boards/TQBR/"
-                        "securities.json?iss.meta=off&iss.only=marketdata&marketdata.columns=SECID").json()
-shares = []
-for i in range(0, len(metadata['marketdata']['data'])):
-    shares.append(metadata['marketdata']['data'][i][0])
 
 start_server = websockets.serve(server, "localhost", 1111)
 
